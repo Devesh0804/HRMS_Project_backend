@@ -1,10 +1,6 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import connectDB from './dbConfig/dbConnect.js';
-// import deptRouter from './routes/SuperAdminRoutes/departmentRoutes.js';
-// import LoginRouter from './routes/userRoutes.js';
-// import SuperAdminRouter from './routes/SuperAdminRoutes/superAdminRoutes.js';
-// import userAuth from './middlewares/userAuth.js';
 import session from 'express-session';
 import UserRouter from './routes/UserRoutes/userRoutes.js';
 import ProjectRouter from './routes/ProjectRoutes/projectRoutes.js';
@@ -31,17 +27,19 @@ app.use(session({
 
 //middlewares
 app.use(cors({
-    origin : "https://hrms-project-frontend-beta.vercel.app" ,
+    origin :"https://hrms-project-frontend-beta.vercel.app" ,
     methods : ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
 
 }))
+//   http://localhost:5173
 app.use(express.urlencoded({extended:true}))
 app.use(express.json());
 app.use('/gate-qr', express.static('routes/GateRoutes/qrImages'));
 
+// userAuth
 app.use('/hrms/authentication', Authrouter);
-app.use('/hrms/user',userAuth, UserRouter);
+app.use('/hrms/user', UserRouter);
 app.use('/hrms/project', ProjectRouter);
 app.use('/hrms/role', RoleRouter);
 app.use('/hrms/address',userAuth, AddressRouter);

@@ -1,67 +1,143 @@
 import express from 'express'
 import mongoose from 'mongoose'
+import multer from 'multer'
+import fs from 'fs'
+import path from 'path'
 import userModel from '../../models/UserModel/userModel.js'
 import { cityModel, StateModel, CountryModel } from '../../models/UserModel/AddressModel/AddressModel..js'
 import bankModel from '../../models/UserModel/BankDetails/bankModel.js'
 import documentModel from '../../models/UserModel/DocumentModel/docModel.js'
 import roleModel from '../../models/RoleModel/RoleModel.js'
 import departMentModel from '../../models/DepartmentModel/departmentModel.js'
-
-
-
+import cloudinary from '../../Config/CloudinarConfig.js'
 
 
 const router = express.Router();
 
 
+// console.log(__filename)
+const Storage = multer.diskStorage({
+    destination: (req, file, callback) => {
+        // console.log(file);
 
-router.post('/savedata', async (req, res) => {
+        callback(null, './uploads')
+    },
+    filename: (req, file, callback) => {
+        let fileName = Date.now() + path.extname(file.originalname)
+        callback(null, fileName)
+        // console.log(file)
+    }
+})
+
+
+const INSERTING = multer({
+    storage: Storage,
+    limits: { fileSize: 1024 * 1024 * 50 }
+})
+
+router.post('/savedata', INSERTING.fields([
+    { name: 'Documents.Marks_10th', maxCount: 1 },
+    { name: 'Documents.Marks_12th', maxCount: 1 },
+    { name: 'Documents.UG_qualifications', maxCount: 1 },
+    { name: 'Documents.PG_qualifications', maxCount: 1 },
+    { name: 'BankDetails.passbook_checkImg', maxCount: 1 }
+]), async (req, res) => {
     console.log('route hit');
 
     try {
 
-        const { address } = req.body
-        console.log(address);
-        
+        const payload = req.body.payload ? JSON.parse(req.body.payload) : req.body;
+        console.log(payload);
+
+        const { address } = payload;
+
         const city = await cityModel.create({ CityName: address.CityName })
         const state = await StateModel.create({ StateName: address.StateName })
         const country = await CountryModel.create({ CountryName: address.CountryName });
 
 
-        const { Documents } = req.body
-        // console.log(Documents);
+        // if(req.files){
+        //     let images = await cloudinary.uploader.upload(req.files.path)
+        // }
+
+
+
+        const uploadToCloudinary = async (file) => {
+            if (!file) return null;
+            try {
+
+                console.log('line :69', file.path);
+
+                const result = await cloudinary.uploader.upload(
+                    file.path,
+                    {
+                        folder: "hrms"
+                    }
+                );
+
+                console.log('line:78 ', result)
+                let image_url = result.url;
+
+                await fs.promises.unlink(file.path).catch((cleanupError) => {
+                    console.error('Failed to delete local upload file:', file.path, cleanupError);
+                });
+
+
+                // console.log("File exists:", fs.existsSync(file.path));
+                // console.log("Path:", file.path);
+
+                console.log('line 89 : ', image_url);
+
+                return image_url;
+            } catch (error) {
+                console.error("Cloudinary upload error:");
+                console.error("message:", error.message);
+                console.error("http_code:", error.http_code);
+                console.error("name:", error.name);
+                console.error("full error:", error);
+                // throw new Error('Cloudinary upload failed. Check Cloudinary credentials and permissions.');
+            }
+        };
+
+        console.log('line:97', req.files['Documents.Marks_10th']?.[0]);
+
+        const Marks_10th_url = await uploadToCloudinary(req.files['Documents.Marks_10th']?.[0]);
+        const Marks_12th_url = await uploadToCloudinary(req.files['Documents.Marks_12th']?.[0]);
+        const UG_qualifications_url = await uploadToCloudinary(req.files['Documents.UG_qualifications']?.[0]);
+        const PG_qualifications_url = await uploadToCloudinary(req.files['Documents.PG_qualifications']?.[0]);
+        const passbook_checkImg_url = await uploadToCloudinary(req.files['BankDetails.passbook_checkImg']?.[0]);
 
         const documents = await documentModel.create({
-            Marks_10th: Documents.Marks_10th,
-            Marks_12th: Documents.Marks_12th,
-            UG_qualifications: Documents.UG_qualifications,
-            PG_qualifications: Documents.PG_qualifications
+            Marks_10th: Marks_10th_url,
+            Marks_12th: Marks_12th_url,
+            UG_qualifications: UG_qualifications_url,
+            PG_qualifications: PG_qualifications_url
         })
 
 
-        const { BankDetails } = req.body
+        const { BankDetails } = payload;
         const bankDetails = await bankModel.create({
             bankname: BankDetails.bankname,
             ifsccode: BankDetails.ifsccode,
             branchName: BankDetails.branchName,
             acccountno: BankDetails.acccountno,
-            passbook_checkImg: BankDetails.passbook_checkImg
+            passbook_checkImg: passbook_checkImg_url || BankDetails.passbook_checkImg || null
         })
 
-        const { department } = req.body;
+        const { department } = payload;
         const departmentDetails = department ? await departMentModel.findOne({ deptName: department }) : null;
         const departmentID = departmentDetails?._id || null;
         // console.log(departmentID);
 
 
 
-        const roleName = req.body.roleName || 'User';
+        const roleName = payload.roleName || 'User';
         const roleID = await roleModel.findOne({ roleName: roleName });
 
 
 
-        const { FullName, useremail, username, password, mobile, AlternateMobile, gender, DOB, status, AccountStatus, startsession, endsession } = req.body;
-            console.log('Documents',req.body.Documents.PG_qualifications);
+        const { FullName, useremail, username, password, mobile, AlternateMobile, gender, DOB, status, AccountStatus, startsession, endsession } = payload;
+        console.log('Documents', payload.Documents?.PG_qualifications);
         let user;
         if (FullName, useremail, username, password, mobile, AlternateMobile, gender, DOB) {
             user = await userModel.create({
@@ -81,7 +157,7 @@ router.post('/savedata', async (req, res) => {
                 Documents: documents._id,
                 BankDetails: bankDetails._id,
                 status: status,
-                AccountStatus:AccountStatus,
+                AccountStatus: AccountStatus,
                 startsession: startsession,
                 endsession: endsession,
                 role: roleID?._id,
@@ -197,8 +273,8 @@ router.post('/updatedata/:id', async (req, res) => {
             }) : null;
 
         //updateMain user
-    
-        
+
+
         const userUpdateData = {
             FullName: req.body.FullName,
             useremail: req.body.useremail,
