@@ -26,10 +26,11 @@ app.use(session({
 
 
 //middlewares
+// https://hrms-project-frontend-beta.vercel.app
 // http://localhost:5173
    
 app.use(cors({
-    origin :"https://hrms-project-frontend-beta.vercel.app" ,
+    origin :"https://hrms-project-frontend-beta.vercel.app",
     methods : ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
 
