@@ -26,13 +26,14 @@ app.use(session({
 
 
 //middlewares
+// http://localhost:5173
 app.use(cors({
     origin :"https://hrms-project-frontend-beta.vercel.app" ,
     methods : ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
 
 }))
-//   http://localhost:5173
+    
 app.use(express.urlencoded({extended:true}))
 app.use(express.json());
 app.use('/gate-qr', express.static('routes/GateRoutes/qrImages'));

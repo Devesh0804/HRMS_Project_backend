@@ -3,7 +3,12 @@ import userModel from '../../models/UserModel/userModel.js'
 import roleModel from '../../models/RoleModel/RoleModel.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import nodemailer from 'nodemailer'
+import dotenv from 'dotenv'
+
+dotenv.config()
 const router = express.Router();
+
 
 
 
@@ -132,5 +137,89 @@ router.post('/register',async(req,res)=>{
 
 
 
+
+
+const transportter = nodemailer.createTransport({
+   service:"gmail",
+   auth:{
+      user:process.env.EMAIL_USER,
+      pass:process.env.EMAIL_PASS
+   }
+});
+
+
+router.post('/forgot_pass',async(req,res)=>{
+   try {
+      const {useremail} = req.body;
+      const user = await userModel.findOne({useremail:useremail})
+      if(!user){
+         return res.status(404).json({message:`${useremail} is not exist`})
+      }
+      
+      const token = jwt.sign({
+         id:user._id
+      },process.env.JWT_SECRET,
+      {expiresIn:"5m"})
+
+      const resetUrl = `https://hrms-project-frontend-beta.vercel.app/reset-pass/${token}`
+      
+      
+      
+      await transportter.sendMail({
+         from:process.env.EMAIL_USER,
+         to:useremail,
+         subject:"Reset your pass",
+         html: ` <h2>Password Reset</h2>
+
+        <p>Click the button below.</p>
+
+        <a href="${resetUrl}">
+            Reset Password
+        </a>
+
+        <p>Link expires in 5 minutes.</p>
+        `
+      })
+      
+      res.status(200).json({message:`reset password mail sends successfully on ${useremail} `})
+
+   } catch (error) {
+       res.status(500).json({error:error.message})
+   }
+
+   
+})
+
+
+
+router.post('/reset-password/:token',async(req,res)=>{
+     try {
+         
+      const {password} = req.body;
+
+
+         const {token} = req.params;
+         if(!token){
+            return res.status(401).json({ message: 'Unauthorized: token missing' });
+         }
+         const decoded = jwt.verify(token,process.env.JWT_SECRET)
+         const user = await userModel.findById(decoded.id)
+
+         // const hashedPassword = await bcrypt.hash(password,10);
+
+         user.password = password;
+
+         await user.save();
+
+         res.status(200).json({message:"paswword updated successfully"})
+         
+      
+     } catch (error) {
+      res.status(500).json({error:error.message})
+      
+     }
+   
+
+})
 
 export default router
