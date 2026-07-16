@@ -155,6 +155,8 @@ router.post('/forgot_pass',async(req,res)=>{
       if(!user){
          return res.status(404).json({message:`${useremail} is not exist`})
       }
+
+
       
       const token = jwt.sign({
          id:user._id
@@ -164,6 +166,14 @@ router.post('/forgot_pass',async(req,res)=>{
       const resetUrl = `https://hrms-project-frontend-beta.vercel.app/reset-pass/${token}`
       
       //   http://localhost:5173/reset-pass/${token}
+
+
+      console.log("EMAIL_USER:", process.env.EMAIL_USER);
+      console.log("JWT_SECRET:", process.env.JWT_SECRET ? "Present" : "Missing");
+
+
+      await transportter.verify();
+      console.log("SMTP Connected");
       
       await transportter.sendMail({
          from:process.env.EMAIL_USER,
@@ -184,9 +194,13 @@ router.post('/forgot_pass',async(req,res)=>{
       res.status(200).json({message:`reset password mail sends successfully on ${useremail} `})
 
    } catch (error) {
-       res.status(500).json({ message: error.message, error: error.message })
-   }
+   console.error("Forgot Password Error:", error);
 
+   res.status(500).json({
+      message: error.message,
+      stack: error.stack
+   });
+}
    
 })
 
