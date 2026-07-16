@@ -66,9 +66,9 @@ router.post('/login', async (req, res) => {
        }else{
         res.status(401).json({message : "user not verified"})
        }
-   } catch (error) {
-         res.status(500).json({error:error.message})
-   } 
+    } catch (error) {
+        res.status(500).json({ message: error.message, error: error.message })
+    } 
 })
 
 router.post('/logout', async (req, res) => {
@@ -163,7 +163,7 @@ router.post('/forgot_pass',async(req,res)=>{
 
       const resetUrl = `https://hrms-project-frontend-beta.vercel.app/reset-pass/${token}`
       
-      
+      //   http://localhost:5173/reset-pass/${token}
       
       await transportter.sendMail({
          from:process.env.EMAIL_USER,
@@ -184,7 +184,7 @@ router.post('/forgot_pass',async(req,res)=>{
       res.status(200).json({message:`reset password mail sends successfully on ${useremail} `})
 
    } catch (error) {
-       res.status(500).json({error:error.message})
+       res.status(500).json({ message: error.message, error: error.message })
    }
 
    
@@ -198,10 +198,11 @@ router.post('/reset-password/:token',async(req,res)=>{
       const {password} = req.body;
 
 
-         const {token} = req.params;
+         let {token} = req.params;
          if(!token){
             return res.status(401).json({ message: 'Unauthorized: token missing' });
          }
+         token = token.trim();
          const decoded = jwt.verify(token,process.env.JWT_SECRET)
          const user = await userModel.findById(decoded.id)
 
@@ -215,7 +216,7 @@ router.post('/reset-password/:token',async(req,res)=>{
          
       
      } catch (error) {
-      res.status(500).json({error:error.message})
+      res.status(500).json({ message: error.message, error: error.message })
       
      }
    
