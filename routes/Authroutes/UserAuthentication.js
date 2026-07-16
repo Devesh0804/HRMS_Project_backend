@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import nodemailer from 'nodemailer'
 import dotenv from 'dotenv'
+import dns from 'node:dns'
 
 dotenv.config()
 const router = express.Router();
@@ -137,13 +138,11 @@ router.post('/register',async(req,res)=>{
 
 
 
+dns.setDefaultResultOrder("ipv4first")
 
 
 const transportter = nodemailer.createTransport({
-   host:"smtp.gmail.com",
-   port:587,
-   requireTLS:true,
-   family:4,
+   service:"gmail",
    auth:{
       user:process.env.EMAIL_USER,
       pass:process.env.EMAIL_PASS
@@ -175,8 +174,14 @@ router.post('/forgot_pass',async(req,res)=>{
       console.log("JWT_SECRET:", process.env.JWT_SECRET ? "Present" : "Missing");
 
 
-      await transportter.verify();
-      console.log("SMTP Connected");
+
+
+      try {
+    await transportter.verify();
+    console.log("SMTP connection successful");
+} catch (err) {
+    console.error("SMTP Verify Error:", err);
+}
       
       await transportter.sendMail({
          from:process.env.EMAIL_USER,
