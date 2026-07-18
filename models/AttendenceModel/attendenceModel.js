@@ -9,6 +9,10 @@ const attendenceSchema = new mongoose.Schema({
         type:String,    
         enum :["A","P","HD","Half Day"],
         require:true
+    },
+    userId:{
+        type : Schema.Types.ObjectId,
+        ref:'users'
     }
 
 });

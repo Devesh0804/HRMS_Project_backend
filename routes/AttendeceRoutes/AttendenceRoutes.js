@@ -6,6 +6,28 @@ import { officeConfig } from '../../Config/Officeconfig.js';
 
 const router = express.Router();
 
+const getTodayRange = () => {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return { startOfDay, endOfDay };
+}
+
+const getTodayAttendance = (userId) => {
+  const { startOfDay, endOfDay } = getTodayRange();
+
+  return AttendenceModel.findOne({
+    userId,
+    AttendedAt: {
+      $gte: startOfDay,
+      $lte: endOfDay
+    }
+  });
+}
+
 
 
 
@@ -16,13 +38,21 @@ const router = express.Router();
 router.post('/savedata', async (req, res) => {
     try {
         
-    console.log(req.user)
+    // console.log(req.user)
        async function verifyLocation(latitude,longitude,date,id){
             const latDiff = Math.abs(latitude - officeConfig.officeLatitude)
             const longDiff = Math.abs(longitude - officeConfig.officeLongitude)
-             const currentTime = date.toLocaleTimeString("en-IN")
+           
+           
+
+           /*frontend time */  const currentTime = date;
+            //  2:39:07 pm
+            
+             
              const HalfDayCheck = new Date()
              HalfDayCheck.setHours(14,10,0,0)
+
+
              const FullDayCheck = new Date()
              FullDayCheck.setHours(18,0,0,0)
             
@@ -33,21 +63,25 @@ router.post('/savedata', async (req, res) => {
 
             
             const allowedRange = 0.005;
+
             if(latDiff <= allowedRange && longDiff <= allowedRange){
               let status;
               if(currentTime >= HalfDayCheck && currentTime < FullDayCheck){
                 status = "Half Day"
+               
+                
               }else if(currentTime >= FullDayCheck){
                 status = "A"
               }else{
                 status = "P"
               }
-              // console.log(status);
+      
               
                 
               const attendence =  await AttendenceModel.create({
                   AttendedAt : date,
-                  AttendenceStatus : status
+                  AttendenceStatus : status,
+                  userId:id
                 })
                 // console.log(attendence);
              const user =  await userModel.findByIdAndUpdate(id,
@@ -68,6 +102,12 @@ router.post('/savedata', async (req, res) => {
         
         
         const { location, formatted , _id } = req.body
+
+        const attendanceAlreadyMarked = await getTodayAttendance(_id);
+
+        if (attendanceAlreadyMarked) {
+          return res.status(409).json({message : "Attendance already marked for today", marked: true})
+        }
         
         
        const date = new Date(formatted)
@@ -79,7 +119,7 @@ router.post('/savedata', async (req, res) => {
         verifyLocation(location.latitude,location.longitude,date,_id);
           
     } catch (error) {
-       console.log(error);
+      //  console.log(error);
        res.status(500).json({message : error.message})
        
     }
@@ -88,37 +128,23 @@ router.post('/savedata', async (req, res) => {
 })
 
 router.get('/check-attendence',async(req,res)=>{
- try {
-  //  console.log('route hit');
-  
-  const employeeId = req.user._id
-// console.log(employeeId);
 
-  
-  const todayDate = new Date().toISOString().split("T")[0]
-  // console.log(todayDate);
-  
- 
-  
-  const attendence = await AttendenceModel.find()
-  let dbDate
-  const alreadyMarked = attendence.find((item)=>{
-    dbDate = new Date(item.AttendedAt).toISOString().split("T")[0]
-  })
-  
-  if(dbDate){
-    return res.json({marked : true})
-  }
+try{
+const attendance = await getTodayAttendance(req.user._id);
 
+if (attendance) {
+    return res.status(200).json({ marked: true });
+}
 else{
-  res.json({marked : false})
+  return res.status(200).json({ marked : false });
 }
  } catch (error) {
-   res.json({error: error})
+   res.json({error: error.message})
   
  }
   
 })
+
 
 router.get('/getData',async(req,res)=>{
    
@@ -130,7 +156,7 @@ router.get('/getData',async(req,res)=>{
   path : 'AttendenceStatus',
   select : 'AttendedAt AttendenceStatus'
  })
-console.log(user);
+// console.log(user);
 
 if(!user){
   res.status(401).json({message : 'no user available'})

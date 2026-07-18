@@ -55,14 +55,6 @@ app.use('/hrms/gates', GateRouter);
 app.use('/hrms/attendence',userAuth, AttendenceRouter);
 
 
-// app.use('/',LoginRouter)
-// app.use('/user',SuperAdminRouter)
-
-// app.use(userAuth)
-// // app.use('/super-admin',createUserRouter)
-// app.use('/department',deptRouter);
-
-
 
 
 app.listen(process.env.PORT, ()=>{

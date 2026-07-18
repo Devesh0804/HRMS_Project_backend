@@ -42,12 +42,12 @@ router.post('/savedata', INSERTING.fields([
     { name: 'Documents.PG_qualifications', maxCount: 1 },
     { name: 'BankDetails.passbook_checkImg', maxCount: 1 }
 ]), async (req, res) => {
-    console.log('route hit');
+    // console.log('route hit');
 
     try {
 
         const payload = req.body.payload ? JSON.parse(req.body.payload) : req.body;
-        console.log(payload);
+        // console.log(payload);
 
         const { address } = payload;
 
@@ -86,20 +86,20 @@ router.post('/savedata', INSERTING.fields([
                 // console.log("File exists:", fs.existsSync(file.path));
                 // console.log("Path:", file.path);
 
-                console.log('line 89 : ', image_url);
+                // console.log('line 89 : ', image_url);
 
                 return image_url;
             } catch (error) {
-                console.error("Cloudinary upload error:");
-                console.error("message:", error.message);
-                console.error("http_code:", error.http_code);
-                console.error("name:", error.name);
-                console.error("full error:", error);
-                // throw new Error('Cloudinary upload failed. Check Cloudinary credentials and permissions.');
+                // console.error("Cloudinary upload error:");
+                // console.error("message:", error.message);
+                // console.error("http_code:", error.http_code);
+                // console.error("name:", error.name);
+                // console.error("full error:", error);
+                throw new Error('Cloudinary upload failed. Check Cloudinary credentials and permissions.');
             }
         };
 
-        console.log('line:97', req.files['Documents.Marks_10th']?.[0]);
+        // console.log('line:97', req.files['Documents.Marks_10th']?.[0]);
 
         const Marks_10th_url = await uploadToCloudinary(req.files['Documents.Marks_10th']?.[0]);
         const Marks_12th_url = await uploadToCloudinary(req.files['Documents.Marks_12th']?.[0]);
@@ -182,7 +182,7 @@ router.post('/savedata', INSERTING.fields([
         res.status(200).json({ message: "data saved successfully", user });
 
     } catch (error) {
-        console.log(error.message);
+        // console.log(error.message);
 
         res.status(500).json({ error: error.message });
     }
